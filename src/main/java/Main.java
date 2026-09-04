@@ -1,3 +1,6 @@
+import db.DB;
+import entities.Livro;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -5,21 +8,28 @@ import java.sql.SQLException;
 
 public class Main {
     public static void main(String[] args) {
-        String url = "jdbc:mysql://localhost:3306/librarySDB";
-        String usuario = "root";
-        String senha = "Senha5050@!#"; // como se fosse o "login" com o bd passando o endereço do bd user e senha
+         Connection conn = null;
+         PreparedStatement st = null;
 
-        String sql = "INSERT INTO livros (titulo, autor, ano) VALUES (?, ?, ?)"; // insere um livro na tabela livros
+        Livro [] livros = {
+                new Livro("Dom Casmurro", "Machado de Assis", 1899),
+                new Livro("O Cortiço", "Aluísio Azevedo", 1890),
+                new Livro("Memórias Póstumas de Brás Cubas", "Machado de Assis", 1881)
+        };
 
-        try (Connection conn = DriverManager.getConnection(url, usuario, senha); // conexão do java com sql dentro de um "tente a conexão"
-             PreparedStatement stmt = conn.prepareStatement(sql)) { // prepare para ser executado com a variavel sql
+        String sql = "INSERT INTO livros (titulo, autor, ano) VALUES (?, ?, ?)";
 
-            stmt.setString(1, "Dom Casmurro");
-            stmt.setString(2, "Machado de Assis");
-            stmt.setInt(3, 1899); // passando os parametros para ficar no lugar de ? ? ? da string
+        try (PreparedStatement stmt = DB.getConnection().prepareStatement(sql)) {
 
-            int linhasInseridas = stmt.executeUpdate();
-            System.out.println(linhasInseridas + " registro(s) inserido(s) com sucesso!");
+            for (Livro livro : livros){
+                stmt.setString(1, livro.titulo);
+                stmt.setString(2,livro.autor);
+                stmt.setInt(3,livro.ano);
+                stmt.addBatch();
+            }
+
+            int[] linhasInseridas = stmt.executeBatch();
+            System.out.println(linhasInseridas.length + " registro(s) inserido(s) com sucesso!");
 
         } catch (SQLException e) {
             System.out.println("Erro ao conectar ou inserir dados:");
