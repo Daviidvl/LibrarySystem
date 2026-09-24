@@ -5,10 +5,8 @@ import db.DB;
 import db.DbException;
 import entities.Livro;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
+import java.util.ArrayList;
 import java.util.List;
 
 public class LivroDaoJDBC implements LivroDao {
@@ -21,7 +19,35 @@ public class LivroDaoJDBC implements LivroDao {
 
     @Override
     public void insert(Livro obj) {
+        PreparedStatement st = null;
+        ResultSet rs = null;
+        try{
+            st = conn.prepareStatement("INSERT INTO livros "
+                    +"(titulo, autor, ano) "
+                    +"VALUES "
+                    +"(?, ?, ?)",
+                    Statement.RETURN_GENERATED_KEYS);
+            st.setString(1, obj.getTitulo());
+            st.setString(2, obj.getAutor());
+            st.setInt(3,obj.getAno());
+            int rowsAfected = st.executeUpdate();
 
+            if (rowsAfected > 0){
+                 rs = st.getGeneratedKeys();
+                if (rs.next()){
+                    int id = rs.getInt(1);
+                    obj.setId(id);
+                }
+            } else {
+                throw new DbException("ERROR");
+            }
+        } catch (SQLException e){
+            throw new DbException(e.getMessage());
+        }
+        finally {
+            DB.closeStatement(st);
+            DB.closeResultset(rs);
+        }
     }
 
     @Override
@@ -68,6 +94,26 @@ public class LivroDaoJDBC implements LivroDao {
 
     @Override
     public List<Livro> findAll() {
-        return List.of();
+        PreparedStatement st = null;
+        ResultSet rs = null ;
+        try{
+            st = conn.prepareStatement("SELECT * FROM livros "
+                    +"ORDER BY titulo ");
+            rs = st.executeQuery();
+
+            List<Livro> list = new ArrayList<>();
+
+            while (rs.next()){
+                Livro obj = instantiateLivro(rs);
+                list.add(obj);
+            }
+            return list;
+
+        } catch (SQLException e) {
+            throw new DbException(e.getMessage());
+        } finally {
+                DB.closeStatement(st);
+                DB.closeResultset(rs);
+        }
     }
 }
